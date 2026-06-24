@@ -39,4 +39,8 @@ public class SystemTask {
     // This creates the "system_id" column in the "system_tasks" table.
     @JoinColumn(name = "system_id", nullable = false)
     private GoalSystem goalSystem;
+
+    public void complete(){
+        this.completed = true;
+    }
 }
