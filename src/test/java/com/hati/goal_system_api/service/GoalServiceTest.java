@@ -2,6 +2,7 @@ package com.hati.goal_system_api.service;
 
 import com.hati.goal_system_api.dto.goal.CreateGoalRequest;
 import com.hati.goal_system_api.dto.goal.GoalResponse;
+import com.hati.goal_system_api.exception.ResourceNotFoundException;
 import com.hati.goal_system_api.model.Goal;
 import com.hati.goal_system_api.model.User;
 import com.hati.goal_system_api.repository.GoalRepository;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Transactional
@@ -50,5 +52,17 @@ class GoalServiceTest {
         assertThat(response.description()).isEqualTo("Build a personal backend project");
         assertThat(goals).hasSize(1);
         assertThat(goals.getFirst().getUser().getId()).isEqualTo(savedUser.getId());
+    }
+
+    @Test
+    void shouldThrowExceptionWhenUserDoesNotExist() {
+        CreateGoalRequest request = new CreateGoalRequest(
+                "Learn Spring Boot",
+                "Build a personal backend project"
+        );
+
+        assertThatThrownBy(() -> goalService.createGoal(999L, request))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("User not found");
     }
 }
