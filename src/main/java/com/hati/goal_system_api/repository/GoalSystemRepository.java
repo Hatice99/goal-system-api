@@ -8,4 +8,6 @@ import java.util.List;
 public interface GoalSystemRepository extends JpaRepository<GoalSystem, Long> {
 
     List<GoalSystem> findByGoalId(Long goalId);
+
+    void deleteAllByGoalId(Long goalId);
 }

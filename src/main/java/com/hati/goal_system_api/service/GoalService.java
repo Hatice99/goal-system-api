@@ -7,9 +7,12 @@ import com.hati.goal_system_api.exception.ResourceNotFoundException;
 import com.hati.goal_system_api.model.Goal;
 import com.hati.goal_system_api.model.User;
 import com.hati.goal_system_api.repository.GoalRepository;
+import com.hati.goal_system_api.repository.GoalSystemRepository;
+import com.hati.goal_system_api.repository.SystemTaskRepository;
 import com.hati.goal_system_api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -19,6 +22,8 @@ public class GoalService {
 
     private final GoalRepository goalRepository;
     private final UserRepository userRepository;
+    private final GoalSystemRepository goalSystemRepository;
+    private final SystemTaskRepository systemTaskRepository;
 
     public GoalResponse createGoal(Long userId, CreateGoalRequest request) {
         User user = userRepository.findById(userId)
@@ -82,5 +87,15 @@ public class GoalService {
                 updatedGoal.getTitle(),
                 updatedGoal.getDescription()
         );
+    }
+
+    @Transactional
+    public void deleteGoal(Long userId, Long goalId) {
+        Goal goal = goalRepository.findByIdAndUserId(goalId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Goal not found"));
+
+        systemTaskRepository.deleteAllByGoalSystemGoalId(goalId);
+        goalSystemRepository.deleteAllByGoalId(goalId);
+        goalRepository.delete(goal);
     }
 }

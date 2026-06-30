@@ -4,9 +4,14 @@ import com.hati.goal_system_api.dto.goal.CreateGoalRequest;
 import com.hati.goal_system_api.dto.goal.GoalResponse;
 import com.hati.goal_system_api.dto.goal.UpdateGoalRequest;
 import com.hati.goal_system_api.exception.ResourceNotFoundException;
+import com.hati.goal_system_api.model.Frequency;
 import com.hati.goal_system_api.model.Goal;
+import com.hati.goal_system_api.model.GoalSystem;
+import com.hati.goal_system_api.model.SystemTask;
 import com.hati.goal_system_api.model.User;
 import com.hati.goal_system_api.repository.GoalRepository;
+import com.hati.goal_system_api.repository.GoalSystemRepository;
+import com.hati.goal_system_api.repository.SystemTaskRepository;
 import com.hati.goal_system_api.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +35,12 @@ class GoalServiceTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private GoalSystemRepository goalSystemRepository;
+
+    @Autowired
+    private SystemTaskRepository systemTaskRepository;
 
     @Test
     void shouldCreateGoalForUser() {
@@ -324,5 +335,86 @@ class GoalServiceTest {
         assertThatThrownBy(() -> goalService.updateGoal(1L, 999L, request))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Goal not found");
+    }
+
+    @Test
+    void shouldDeleteGoalForUser() {
+        User user = new User();
+        user.setUsername("hati");
+        user.setEmail("hati@example.com");
+        user.setPassword("hashed-password");
+        User savedUser = userRepository.save(user);
+
+        Goal goal = new Goal();
+        goal.setTitle("Learn Spring Boot");
+        goal.setDescription("Build a backend project");
+        goal.setUser(savedUser);
+        Goal savedGoal = goalRepository.save(goal);
+
+        goalService.deleteGoal(savedUser.getId(), savedGoal.getId());
+
+        assertThat(goalRepository.findById(savedGoal.getId())).isEmpty();
+    }
+
+    @Test
+    void shouldDeleteGoalWithGoalSystemsAndTasks() {
+        User user = new User();
+        user.setUsername("hati");
+        user.setEmail("hati@example.com");
+        user.setPassword("hashed-password");
+        User savedUser = userRepository.save(user);
+
+        Goal goal = new Goal();
+        goal.setTitle("Improve health");
+        goal.setDescription("Build healthy routines");
+        goal.setUser(savedUser);
+        Goal savedGoal = goalRepository.save(goal);
+
+        GoalSystem goalSystem = new GoalSystem();
+        goalSystem.setTitle("Morning exercise");
+        goalSystem.setFrequency(Frequency.DAILY);
+        goalSystem.setGoal(savedGoal);
+        GoalSystem savedGoalSystem = goalSystemRepository.save(goalSystem);
+
+        SystemTask task = new SystemTask();
+        task.setTitle("Run for 20 minutes");
+        task.setGoalSystem(savedGoalSystem);
+        SystemTask savedTask = systemTaskRepository.save(task);
+
+        goalService.deleteGoal(savedUser.getId(), savedGoal.getId());
+
+        assertThat(systemTaskRepository.findById(savedTask.getId())).isEmpty();
+        assertThat(goalSystemRepository.findById(savedGoalSystem.getId())).isEmpty();
+        assertThat(goalRepository.findById(savedGoal.getId())).isEmpty();
+    }
+
+    @Test
+    void shouldNotDeleteGoalBelongingToAnotherUser() {
+        User firstUser = new User();
+        firstUser.setUsername("hati");
+        firstUser.setEmail("hati@example.com");
+        firstUser.setPassword("hashed-password");
+        User savedFirstUser = userRepository.save(firstUser);
+
+        User secondUser = new User();
+        secondUser.setUsername("alex");
+        secondUser.setEmail("alex@example.com");
+        secondUser.setPassword("hashed-password");
+        User savedSecondUser = userRepository.save(secondUser);
+
+        Goal secondUsersGoal = new Goal();
+        secondUsersGoal.setTitle("Learn PostgreSQL");
+        secondUsersGoal.setDescription("Practice database queries");
+        secondUsersGoal.setUser(savedSecondUser);
+        Goal savedGoal = goalRepository.save(secondUsersGoal);
+
+        assertThatThrownBy(() -> goalService.deleteGoal(
+                savedFirstUser.getId(),
+                savedGoal.getId()
+        ))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Goal not found");
+
+        assertThat(goalRepository.findById(savedGoal.getId())).isPresent();
     }
 }

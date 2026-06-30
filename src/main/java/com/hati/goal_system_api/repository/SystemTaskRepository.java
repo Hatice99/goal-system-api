@@ -8,4 +8,6 @@ import java.util.List;
 public interface SystemTaskRepository extends JpaRepository<SystemTask, Long> {
 
     List<SystemTask> findByGoalSystemId(Long goalSystemId);
+
+    void deleteAllByGoalSystemGoalId(Long goalId);
 }
