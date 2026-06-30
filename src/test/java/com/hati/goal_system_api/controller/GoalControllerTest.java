@@ -2,6 +2,7 @@ package com.hati.goal_system_api.controller;
 
 import com.hati.goal_system_api.dto.goal.CreateGoalRequest;
 import com.hati.goal_system_api.dto.goal.GoalResponse;
+import com.hati.goal_system_api.exception.ResourceNotFoundException;
 import com.hati.goal_system_api.service.GoalService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -80,5 +81,35 @@ class GoalControllerTest {
                 .andExpect(jsonPath("$[0].title", is("Learn Spring Boot")))
                 .andExpect(jsonPath("$[1].id", is(2)))
                 .andExpect(jsonPath("$[1].title", is("Exercise regularly")));
+    }
+
+    @Test
+    void shouldGetGoalByIdForUser() throws Exception {
+        GoalResponse response = new GoalResponse(
+                1L,
+                "Learn Spring Boot",
+                "Build a backend project"
+        );
+
+        Mockito.when(goalService.getGoalById(1L, 1L))
+                .thenReturn(response);
+
+        mockMvc.perform(get("/goals/1")
+                        .header("X-User-Id", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.title", is("Learn Spring Boot")))
+                .andExpect(jsonPath("$.description", is("Build a backend project")));
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenGoalIsUnavailable() throws Exception {
+        Mockito.when(goalService.getGoalById(1L, 999L))
+                .thenThrow(new ResourceNotFoundException("Goal not found"));
+
+        mockMvc.perform(get("/goals/999")
+                        .header("X-User-Id", 1L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message", is("Goal not found")));
     }
 }

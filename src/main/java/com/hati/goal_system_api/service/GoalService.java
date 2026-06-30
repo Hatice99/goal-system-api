@@ -46,4 +46,15 @@ public class GoalService {
                 ))
                 .toList();
     }
+
+    public GoalResponse getGoalById(Long userId, Long goalId) {
+        Goal goal = goalRepository.findByIdAndUserId(goalId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Goal not found"));
+
+        return new GoalResponse(
+                goal.getId(),
+                goal.getTitle(),
+                goal.getDescription()
+        );
+    }
 }

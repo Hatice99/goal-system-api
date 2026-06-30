@@ -125,4 +125,63 @@ class GoalServiceTest {
         assertThat(responses).hasSize(1);
         assertThat(responses.getFirst().title()).isEqualTo("Learn Spring Boot");
     }
+
+    @Test
+    void shouldGetGoalByIdForUser() {
+        User user = new User();
+        user.setUsername("hati");
+        user.setEmail("hati@example.com");
+        user.setPassword("hashed-password");
+        User savedUser = userRepository.save(user);
+
+        Goal goal = new Goal();
+        goal.setTitle("Learn Spring Boot");
+        goal.setDescription("Build a backend project");
+        goal.setUser(savedUser);
+        Goal savedGoal = goalRepository.save(goal);
+
+        GoalResponse response = goalService.getGoalById(
+                savedUser.getId(),
+                savedGoal.getId()
+        );
+
+        assertThat(response.id()).isEqualTo(savedGoal.getId());
+        assertThat(response.title()).isEqualTo("Learn Spring Boot");
+        assertThat(response.description()).isEqualTo("Build a backend project");
+    }
+
+    @Test
+    void shouldNotGetGoalBelongingToAnotherUser() {
+        User firstUser = new User();
+        firstUser.setUsername("hati");
+        firstUser.setEmail("hati@example.com");
+        firstUser.setPassword("hashed-password");
+        User savedFirstUser = userRepository.save(firstUser);
+
+        User secondUser = new User();
+        secondUser.setUsername("alex");
+        secondUser.setEmail("alex@example.com");
+        secondUser.setPassword("hashed-password");
+        User savedSecondUser = userRepository.save(secondUser);
+
+        Goal secondUsersGoal = new Goal();
+        secondUsersGoal.setTitle("Learn PostgreSQL");
+        secondUsersGoal.setDescription("Practice database queries");
+        secondUsersGoal.setUser(savedSecondUser);
+        Goal savedGoal = goalRepository.save(secondUsersGoal);
+
+        assertThatThrownBy(() -> goalService.getGoalById(
+                savedFirstUser.getId(),
+                savedGoal.getId()
+        ))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Goal not found");
+    }
+
+    @Test
+    void shouldThrowExceptionWhenGoalDoesNotExist() {
+        assertThatThrownBy(() -> goalService.getGoalById(1L, 999L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Goal not found");
+    }
 }
