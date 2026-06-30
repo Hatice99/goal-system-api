@@ -1,0 +1,129 @@
+package com.hati.goal_system_api.controller;
+
+import com.hati.goal_system_api.dto.goalsystem.CreateGoalSystemRequest;
+import com.hati.goal_system_api.dto.goalsystem.GoalSystemResponse;
+import com.hati.goal_system_api.model.Frequency;
+import com.hati.goal_system_api.service.GoalSystemService;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@WebMvcTest(GoalSystemController.class)
+@AutoConfigureMockMvc(addFilters = false)
+class GoalSystemControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
+    private GoalSystemService goalSystemService;
+
+    @Test
+    void shouldCreateGoalSystemForUsersGoal() throws Exception {
+        GoalSystemResponse response = new GoalSystemResponse(
+                1L,
+                "Morning exercise",
+                Frequency.DAILY,
+                10L
+        );
+
+        Mockito.when(goalSystemService.createGoalSystem(
+                        eq(1L),
+                        any(CreateGoalSystemRequest.class)
+                ))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/systems")
+                        .header("X-User-Id", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Morning exercise",
+                                  "frequency": "DAILY",
+                                  "goalId": 10
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.title", is("Morning exercise")))
+                .andExpect(jsonPath("$.frequency", is("DAILY")))
+                .andExpect(jsonPath("$.goalId", is(10)));
+    }
+
+    @Test
+    void shouldRejectGoalSystemWithoutTitle() throws Exception {
+        mockMvc.perform(post("/systems")
+                        .header("X-User-Id", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "frequency": "DAILY",
+                                  "goalId": 10
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        Mockito.verifyNoInteractions(goalSystemService);
+    }
+
+    @Test
+    void shouldRejectGoalSystemWithoutFrequency() throws Exception {
+        mockMvc.perform(post("/systems")
+                        .header("X-User-Id", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Morning exercise",
+                                  "goalId": 10
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        Mockito.verifyNoInteractions(goalSystemService);
+    }
+
+    @Test
+    void shouldRejectGoalSystemWithoutGoalId() throws Exception {
+        mockMvc.perform(post("/systems")
+                        .header("X-User-Id", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Morning exercise",
+                                  "frequency": "DAILY"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        Mockito.verifyNoInteractions(goalSystemService);
+    }
+
+    @Test
+    void shouldRejectUnknownFrequency() throws Exception {
+        mockMvc.perform(post("/systems")
+                        .header("X-User-Id", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Morning exercise",
+                                  "frequency": "YEARLY",
+                                  "goalId": 10
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        Mockito.verifyNoInteractions(goalSystemService);
+    }
+}
