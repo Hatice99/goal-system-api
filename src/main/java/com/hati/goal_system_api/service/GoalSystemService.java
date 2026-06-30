@@ -2,6 +2,7 @@ package com.hati.goal_system_api.service;
 
 import com.hati.goal_system_api.dto.goalsystem.CreateGoalSystemRequest;
 import com.hati.goal_system_api.dto.goalsystem.GoalSystemResponse;
+import com.hati.goal_system_api.dto.goalsystem.UpdateGoalSystemRequest;
 import com.hati.goal_system_api.exception.ResourceNotFoundException;
 import com.hati.goal_system_api.model.Goal;
 import com.hati.goal_system_api.model.GoalSystem;
@@ -50,5 +51,32 @@ public class GoalSystemService {
                         goalSystem.getGoal().getId()
                 ))
                 .toList();
+    }
+
+    public GoalSystemResponse updateGoalSystem(
+            Long userId,
+            Long goalSystemId,
+            UpdateGoalSystemRequest request
+    ) {
+        GoalSystem goalSystem = goalSystemRepository
+                .findByIdAndGoalUserId(goalSystemId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("GoalSystem not found"));
+
+        if (request.title() != null) {
+            goalSystem.setTitle(request.title());
+        }
+
+        if (request.frequency() != null) {
+            goalSystem.setFrequency(request.frequency());
+        }
+
+        GoalSystem updatedGoalSystem = goalSystemRepository.save(goalSystem);
+
+        return new GoalSystemResponse(
+                updatedGoalSystem.getId(),
+                updatedGoalSystem.getTitle(),
+                updatedGoalSystem.getFrequency(),
+                updatedGoalSystem.getGoal().getId()
+        );
     }
 }

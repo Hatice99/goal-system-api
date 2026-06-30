@@ -2,6 +2,7 @@ package com.hati.goal_system_api.service;
 
 import com.hati.goal_system_api.dto.goalsystem.CreateGoalSystemRequest;
 import com.hati.goal_system_api.dto.goalsystem.GoalSystemResponse;
+import com.hati.goal_system_api.dto.goalsystem.UpdateGoalSystemRequest;
 import com.hati.goal_system_api.exception.ResourceNotFoundException;
 import com.hati.goal_system_api.model.Frequency;
 import com.hati.goal_system_api.model.Goal;
@@ -190,5 +191,179 @@ class GoalSystemServiceTest {
 
         assertThat(responses).hasSize(1);
         assertThat(responses.getFirst().title()).isEqualTo("Morning exercise");
+    }
+
+    @Test
+    void shouldUpdateGoalSystemForUser() {
+        User user = new User();
+        user.setUsername("hati");
+        user.setEmail("hati@example.com");
+        user.setPassword("hashed-password");
+        User savedUser = userRepository.save(user);
+
+        Goal goal = new Goal();
+        goal.setTitle("Improve health");
+        goal.setDescription("Build healthy routines");
+        goal.setUser(savedUser);
+        Goal savedGoal = goalRepository.save(goal);
+
+        GoalSystem goalSystem = new GoalSystem();
+        goalSystem.setTitle("Morning exercise");
+        goalSystem.setFrequency(Frequency.DAILY);
+        goalSystem.setGoal(savedGoal);
+        GoalSystem savedGoalSystem = goalSystemRepository.save(goalSystem);
+
+        UpdateGoalSystemRequest request = new UpdateGoalSystemRequest(
+                "Weekly exercise",
+                Frequency.WEEKLY
+        );
+
+        GoalSystemResponse response = goalSystemService.updateGoalSystem(
+                savedUser.getId(),
+                savedGoalSystem.getId(),
+                request
+        );
+
+        GoalSystem updatedGoalSystem = goalSystemRepository
+                .findById(savedGoalSystem.getId())
+                .orElseThrow();
+
+        assertThat(response.title()).isEqualTo("Weekly exercise");
+        assertThat(response.frequency()).isEqualTo(Frequency.WEEKLY);
+        assertThat(updatedGoalSystem.getTitle()).isEqualTo("Weekly exercise");
+        assertThat(updatedGoalSystem.getFrequency()).isEqualTo(Frequency.WEEKLY);
+    }
+
+    @Test
+    void shouldOnlyUpdateProvidedGoalSystemFields() {
+        User user = new User();
+        user.setUsername("hati");
+        user.setEmail("hati@example.com");
+        user.setPassword("hashed-password");
+        User savedUser = userRepository.save(user);
+
+        Goal goal = new Goal();
+        goal.setTitle("Improve health");
+        goal.setDescription("Build healthy routines");
+        goal.setUser(savedUser);
+        Goal savedGoal = goalRepository.save(goal);
+
+        GoalSystem goalSystem = new GoalSystem();
+        goalSystem.setTitle("Morning exercise");
+        goalSystem.setFrequency(Frequency.DAILY);
+        goalSystem.setGoal(savedGoal);
+        GoalSystem savedGoalSystem = goalSystemRepository.save(goalSystem);
+
+        UpdateGoalSystemRequest request = new UpdateGoalSystemRequest(
+                "Evening exercise",
+                null
+        );
+
+        GoalSystemResponse response = goalSystemService.updateGoalSystem(
+                savedUser.getId(),
+                savedGoalSystem.getId(),
+                request
+        );
+
+        assertThat(response.title()).isEqualTo("Evening exercise");
+        assertThat(response.frequency()).isEqualTo(Frequency.DAILY);
+    }
+
+    @Test
+    void shouldOnlyUpdateGoalSystemFrequency() {
+        User user = new User();
+        user.setUsername("hati");
+        user.setEmail("hati@example.com");
+        user.setPassword("hashed-password");
+        User savedUser = userRepository.save(user);
+
+        Goal goal = new Goal();
+        goal.setTitle("Improve health");
+        goal.setDescription("Build healthy routines");
+        goal.setUser(savedUser);
+        Goal savedGoal = goalRepository.save(goal);
+
+        GoalSystem goalSystem = new GoalSystem();
+        goalSystem.setTitle("Keep this title");
+        goalSystem.setFrequency(Frequency.DAILY);
+        goalSystem.setGoal(savedGoal);
+        GoalSystem savedGoalSystem = goalSystemRepository.save(goalSystem);
+
+        UpdateGoalSystemRequest request = new UpdateGoalSystemRequest(
+                null,
+                Frequency.WEEKLY
+        );
+
+        GoalSystemResponse response = goalSystemService.updateGoalSystem(
+                savedUser.getId(),
+                savedGoalSystem.getId(),
+                request
+        );
+
+        assertThat(response.title()).isEqualTo("Keep this title");
+        assertThat(response.frequency()).isEqualTo(Frequency.WEEKLY);
+    }
+
+    @Test
+    void shouldNotUpdateGoalSystemBelongingToAnotherUser() {
+        User firstUser = new User();
+        firstUser.setUsername("hati");
+        firstUser.setEmail("hati@example.com");
+        firstUser.setPassword("hashed-password");
+        User savedFirstUser = userRepository.save(firstUser);
+
+        User secondUser = new User();
+        secondUser.setUsername("alex");
+        secondUser.setEmail("alex@example.com");
+        secondUser.setPassword("hashed-password");
+        User savedSecondUser = userRepository.save(secondUser);
+
+        Goal secondUsersGoal = new Goal();
+        secondUsersGoal.setTitle("Improve health");
+        secondUsersGoal.setDescription("Build healthy routines");
+        secondUsersGoal.setUser(savedSecondUser);
+        Goal savedGoal = goalRepository.save(secondUsersGoal);
+
+        GoalSystem secondUsersGoalSystem = new GoalSystem();
+        secondUsersGoalSystem.setTitle("Morning exercise");
+        secondUsersGoalSystem.setFrequency(Frequency.DAILY);
+        secondUsersGoalSystem.setGoal(savedGoal);
+        GoalSystem savedGoalSystem = goalSystemRepository.save(secondUsersGoalSystem);
+
+        UpdateGoalSystemRequest request = new UpdateGoalSystemRequest(
+                "Changed by another user",
+                Frequency.WEEKLY
+        );
+
+        assertThatThrownBy(() -> goalSystemService.updateGoalSystem(
+                savedFirstUser.getId(),
+                savedGoalSystem.getId(),
+                request
+        ))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("GoalSystem not found");
+
+        GoalSystem unchangedGoalSystem = goalSystemRepository
+                .findById(savedGoalSystem.getId())
+                .orElseThrow();
+
+        assertThat(unchangedGoalSystem.getTitle()).isEqualTo("Morning exercise");
+        assertThat(unchangedGoalSystem.getFrequency()).isEqualTo(Frequency.DAILY);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenUpdatingNonExistingGoalSystem() {
+        UpdateGoalSystemRequest request = new UpdateGoalSystemRequest(
+                "Weekly exercise",
+                Frequency.WEEKLY
+        );
+
+        assertThatThrownBy(() -> goalSystemService.updateGoalSystem(
+                1L,
+                999L,
+                request
+        ))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("GoalSystem not found");
     }
 }
