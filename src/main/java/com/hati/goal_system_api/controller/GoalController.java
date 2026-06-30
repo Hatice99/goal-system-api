@@ -2,11 +2,13 @@ package com.hati.goal_system_api.controller;
 
 import com.hati.goal_system_api.dto.goal.CreateGoalRequest;
 import com.hati.goal_system_api.dto.goal.GoalResponse;
+import com.hati.goal_system_api.dto.goal.UpdateGoalRequest;
 import com.hati.goal_system_api.service.GoalService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -45,5 +47,14 @@ public class GoalController {
             @PathVariable Long id
     ) {
         return ResponseEntity.ok(goalService.getGoalById(userId, id));
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<GoalResponse> updateGoal(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long id,
+            @RequestBody UpdateGoalRequest request
+    ) {
+        return ResponseEntity.ok(goalService.updateGoal(userId, id, request));
     }
 }

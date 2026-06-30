@@ -2,6 +2,7 @@ package com.hati.goal_system_api.controller;
 
 import com.hati.goal_system_api.dto.goal.CreateGoalRequest;
 import com.hati.goal_system_api.dto.goal.GoalResponse;
+import com.hati.goal_system_api.dto.goal.UpdateGoalRequest;
 import com.hati.goal_system_api.exception.ResourceNotFoundException;
 import com.hati.goal_system_api.service.GoalService;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,7 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -111,5 +113,35 @@ class GoalControllerTest {
                         .header("X-User-Id", 1L))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message", is("Goal not found")));
+    }
+
+    @Test
+    void shouldUpdateGoalForUser() throws Exception {
+        GoalResponse response = new GoalResponse(
+                1L,
+                "Learn Spring Boot",
+                "Build a backend project"
+        );
+
+        Mockito.when(goalService.updateGoal(
+                        eq(1L),
+                        eq(1L),
+                        any(UpdateGoalRequest.class)
+                ))
+                .thenReturn(response);
+
+        mockMvc.perform(patch("/goals/1")
+                        .header("X-User-Id", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Learn Spring Boot",
+                                  "description": "Build a backend project"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.title", is("Learn Spring Boot")))
+                .andExpect(jsonPath("$.description", is("Build a backend project")));
     }
 }

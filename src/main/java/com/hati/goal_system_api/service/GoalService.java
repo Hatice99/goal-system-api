@@ -2,6 +2,7 @@ package com.hati.goal_system_api.service;
 
 import com.hati.goal_system_api.dto.goal.CreateGoalRequest;
 import com.hati.goal_system_api.dto.goal.GoalResponse;
+import com.hati.goal_system_api.dto.goal.UpdateGoalRequest;
 import com.hati.goal_system_api.exception.ResourceNotFoundException;
 import com.hati.goal_system_api.model.Goal;
 import com.hati.goal_system_api.model.User;
@@ -55,6 +56,31 @@ public class GoalService {
                 goal.getId(),
                 goal.getTitle(),
                 goal.getDescription()
+        );
+    }
+
+    public GoalResponse updateGoal(
+            Long userId,
+            Long goalId,
+            UpdateGoalRequest request
+    ) {
+        Goal goal = goalRepository.findByIdAndUserId(goalId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Goal not found"));
+
+        if (request.title() != null) {
+            goal.setTitle(request.title());
+        }
+
+        if (request.description() != null) {
+            goal.setDescription(request.description());
+        }
+
+        Goal updatedGoal = goalRepository.save(goal);
+
+        return new GoalResponse(
+                updatedGoal.getId(),
+                updatedGoal.getTitle(),
+                updatedGoal.getDescription()
         );
     }
 }
