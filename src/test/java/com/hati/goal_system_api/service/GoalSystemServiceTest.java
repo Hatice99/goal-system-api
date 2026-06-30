@@ -15,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -102,5 +104,91 @@ class GoalSystemServiceTest {
                 .hasMessage("Goal not found");
 
         assertThat(goalSystemRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void shouldGetGoalSystemsForUser() {
+        User user = new User();
+        user.setUsername("hati");
+        user.setEmail("hati@example.com");
+        user.setPassword("hashed-password");
+        User savedUser = userRepository.save(user);
+
+        Goal goal = new Goal();
+        goal.setTitle("Improve health");
+        goal.setDescription("Build healthy routines");
+        goal.setUser(savedUser);
+        Goal savedGoal = goalRepository.save(goal);
+
+        GoalSystem firstGoalSystem = new GoalSystem();
+        firstGoalSystem.setTitle("Morning exercise");
+        firstGoalSystem.setFrequency(Frequency.DAILY);
+        firstGoalSystem.setGoal(savedGoal);
+
+        GoalSystem secondGoalSystem = new GoalSystem();
+        secondGoalSystem.setTitle("Weekly meal planning");
+        secondGoalSystem.setFrequency(Frequency.WEEKLY);
+        secondGoalSystem.setGoal(savedGoal);
+
+        goalSystemRepository.saveAll(List.of(firstGoalSystem, secondGoalSystem));
+
+        List<GoalSystemResponse> responses =
+                goalSystemService.getGoalSystemsForUser(savedUser.getId());
+
+        assertThat(responses).hasSize(2);
+        assertThat(responses)
+                .extracting(GoalSystemResponse::title)
+                .containsExactlyInAnyOrder(
+                        "Morning exercise",
+                        "Weekly meal planning"
+                );
+    }
+
+    @Test
+    void shouldOnlyGetGoalSystemsBelongingToUser() {
+        User firstUser = new User();
+        firstUser.setUsername("hati");
+        firstUser.setEmail("hati@example.com");
+        firstUser.setPassword("hashed-password");
+        User savedFirstUser = userRepository.save(firstUser);
+
+        User secondUser = new User();
+        secondUser.setUsername("alex");
+        secondUser.setEmail("alex@example.com");
+        secondUser.setPassword("hashed-password");
+        User savedSecondUser = userRepository.save(secondUser);
+
+        Goal firstUsersGoal = new Goal();
+        firstUsersGoal.setTitle("Improve health");
+        firstUsersGoal.setDescription("Build healthy routines");
+        firstUsersGoal.setUser(savedFirstUser);
+        Goal savedFirstUsersGoal = goalRepository.save(firstUsersGoal);
+
+        Goal secondUsersGoal = new Goal();
+        secondUsersGoal.setTitle("Learn Spring Boot");
+        secondUsersGoal.setDescription("Build a backend project");
+        secondUsersGoal.setUser(savedSecondUser);
+        Goal savedSecondUsersGoal = goalRepository.save(secondUsersGoal);
+
+        GoalSystem firstUsersGoalSystem = new GoalSystem();
+        firstUsersGoalSystem.setTitle("Morning exercise");
+        firstUsersGoalSystem.setFrequency(Frequency.DAILY);
+        firstUsersGoalSystem.setGoal(savedFirstUsersGoal);
+
+        GoalSystem secondUsersGoalSystem = new GoalSystem();
+        secondUsersGoalSystem.setTitle("Study every evening");
+        secondUsersGoalSystem.setFrequency(Frequency.DAILY);
+        secondUsersGoalSystem.setGoal(savedSecondUsersGoal);
+
+        goalSystemRepository.saveAll(List.of(
+                firstUsersGoalSystem,
+                secondUsersGoalSystem
+        ));
+
+        List<GoalSystemResponse> responses =
+                goalSystemService.getGoalSystemsForUser(savedFirstUser.getId());
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.getFirst().title()).isEqualTo("Morning exercise");
     }
 }

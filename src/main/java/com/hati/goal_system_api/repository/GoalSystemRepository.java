@@ -9,5 +9,7 @@ public interface GoalSystemRepository extends JpaRepository<GoalSystem, Long> {
 
     List<GoalSystem> findByGoalId(Long goalId);
 
+    List<GoalSystem> findByGoalUserId(Long userId);
+
     void deleteAllByGoalId(Long goalId);
 }

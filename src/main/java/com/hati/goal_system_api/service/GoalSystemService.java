@@ -10,6 +10,8 @@ import com.hati.goal_system_api.repository.GoalSystemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class GoalSystemService {
@@ -37,5 +39,16 @@ public class GoalSystemService {
                 savedGoalSystem.getFrequency(),
                 savedGoalSystem.getGoal().getId()
         );
+    }
+
+    public List<GoalSystemResponse> getGoalSystemsForUser(Long userId) {
+        return goalSystemRepository.findByGoalUserId(userId).stream()
+                .map(goalSystem -> new GoalSystemResponse(
+                        goalSystem.getId(),
+                        goalSystem.getTitle(),
+                        goalSystem.getFrequency(),
+                        goalSystem.getGoal().getId()
+                ))
+                .toList();
     }
 }

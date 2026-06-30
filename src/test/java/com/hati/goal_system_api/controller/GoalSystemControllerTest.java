@@ -13,9 +13,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -125,5 +128,38 @@ class GoalSystemControllerTest {
                 .andExpect(status().isBadRequest());
 
         Mockito.verifyNoInteractions(goalSystemService);
+    }
+
+    @Test
+    void shouldGetGoalSystemsForUser() throws Exception {
+        List<GoalSystemResponse> responses = List.of(
+                new GoalSystemResponse(
+                        1L,
+                        "Morning exercise",
+                        Frequency.DAILY,
+                        10L
+                ),
+                new GoalSystemResponse(
+                        2L,
+                        "Weekly meal planning",
+                        Frequency.WEEKLY,
+                        10L
+                )
+        );
+
+        Mockito.when(goalSystemService.getGoalSystemsForUser(1L))
+                .thenReturn(responses);
+
+        mockMvc.perform(get("/systems")
+                        .header("X-User-Id", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id", is(1)))
+                .andExpect(jsonPath("$[0].title", is("Morning exercise")))
+                .andExpect(jsonPath("$[0].frequency", is("DAILY")))
+                .andExpect(jsonPath("$[0].goalId", is(10)))
+                .andExpect(jsonPath("$[1].id", is(2)))
+                .andExpect(jsonPath("$[1].title", is("Weekly meal planning")))
+                .andExpect(jsonPath("$[1].frequency", is("WEEKLY")))
+                .andExpect(jsonPath("$[0].goalId", is(10)));
     }
 }
