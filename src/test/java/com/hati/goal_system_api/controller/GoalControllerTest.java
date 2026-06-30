@@ -12,9 +12,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -58,5 +61,24 @@ class GoalControllerTest {
                 .andExpect(jsonPath("$.id", is(1)))
                 .andExpect(jsonPath("$.title", is("Learn Spring Boot")))
                 .andExpect(jsonPath("$.description", is("Build a personal backend project")));
+    }
+
+    @Test
+    void shouldGetGoalsForUser() throws Exception {
+        List<GoalResponse> responses = List.of(
+                new GoalResponse(1L, "Learn Spring Boot", "Build a backend project"),
+                new GoalResponse(2L, "Exercise regularly", "Improve physical health")
+        );
+
+        Mockito.when(goalService.getGoalsForUser(1L))
+                .thenReturn(responses);
+
+        mockMvc.perform(get("/goals")
+                        .header("X-User-Id", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id", is(1)))
+                .andExpect(jsonPath("$[0].title", is("Learn Spring Boot")))
+                .andExpect(jsonPath("$[1].id", is(2)))
+                .andExpect(jsonPath("$[1].title", is("Exercise regularly")));
     }
 }
