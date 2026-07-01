@@ -7,9 +7,11 @@ import com.hati.goal_system_api.exception.ResourceNotFoundException;
 import com.hati.goal_system_api.model.Frequency;
 import com.hati.goal_system_api.model.Goal;
 import com.hati.goal_system_api.model.GoalSystem;
+import com.hati.goal_system_api.model.SystemTask;
 import com.hati.goal_system_api.model.User;
 import com.hati.goal_system_api.repository.GoalRepository;
 import com.hati.goal_system_api.repository.GoalSystemRepository;
+import com.hati.goal_system_api.repository.SystemTaskRepository;
 import com.hati.goal_system_api.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +38,9 @@ class GoalSystemServiceTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private SystemTaskRepository systemTaskRepository;
 
     @Test
     void shouldCreateGoalSystemForUsersGoal() {
@@ -363,6 +368,89 @@ class GoalSystemServiceTest {
                 999L,
                 request
         ))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("GoalSystem not found");
+    }
+
+    @Test
+    void shouldDeleteGoalSystemWithTasksForUser() {
+        User user = new User();
+        user.setUsername("hati");
+        user.setEmail("hati@example.com");
+        user.setPassword("hashed-password");
+        User savedUser = userRepository.save(user);
+
+        Goal goal = new Goal();
+        goal.setTitle("Improve health");
+        goal.setDescription("Build healthy routines");
+        goal.setUser(savedUser);
+        Goal savedGoal = goalRepository.save(goal);
+
+        GoalSystem goalSystem = new GoalSystem();
+        goalSystem.setTitle("Morning exercise");
+        goalSystem.setFrequency(Frequency.DAILY);
+        goalSystem.setGoal(savedGoal);
+        GoalSystem savedGoalSystem = goalSystemRepository.save(goalSystem);
+
+        SystemTask task = new SystemTask();
+        task.setTitle("Run for 20 minutes");
+        task.setGoalSystem(savedGoalSystem);
+        SystemTask savedTask = systemTaskRepository.save(task);
+
+        goalSystemService.deleteGoalSystem(
+                savedUser.getId(),
+                savedGoalSystem.getId()
+        );
+
+        assertThat(systemTaskRepository.findById(savedTask.getId())).isEmpty();
+        assertThat(goalSystemRepository.findById(savedGoalSystem.getId())).isEmpty();
+    }
+
+    @Test
+    void shouldNotDeleteGoalSystemBelongingToAnotherUser() {
+        User firstUser = new User();
+        firstUser.setUsername("hati");
+        firstUser.setEmail("hati@example.com");
+        firstUser.setPassword("hashed-password");
+        User savedFirstUser = userRepository.save(firstUser);
+
+        User secondUser = new User();
+        secondUser.setUsername("alex");
+        secondUser.setEmail("alex@example.com");
+        secondUser.setPassword("hashed-password");
+        User savedSecondUser = userRepository.save(secondUser);
+
+        Goal secondUsersGoal = new Goal();
+        secondUsersGoal.setTitle("Improve health");
+        secondUsersGoal.setDescription("Build healthy routines");
+        secondUsersGoal.setUser(savedSecondUser);
+        Goal savedGoal = goalRepository.save(secondUsersGoal);
+
+        GoalSystem secondUsersGoalSystem = new GoalSystem();
+        secondUsersGoalSystem.setTitle("Morning exercise");
+        secondUsersGoalSystem.setFrequency(Frequency.DAILY);
+        secondUsersGoalSystem.setGoal(savedGoal);
+        GoalSystem savedGoalSystem = goalSystemRepository.save(secondUsersGoalSystem);
+
+        SystemTask task = new SystemTask();
+        task.setTitle("Run for 20 minutes");
+        task.setGoalSystem(savedGoalSystem);
+        SystemTask savedTask = systemTaskRepository.save(task);
+
+        assertThatThrownBy(() -> goalSystemService.deleteGoalSystem(
+                savedFirstUser.getId(),
+                savedGoalSystem.getId()
+        ))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("GoalSystem not found");
+
+        assertThat(goalSystemRepository.findById(savedGoalSystem.getId())).isPresent();
+        assertThat(systemTaskRepository.findById(savedTask.getId())).isPresent();
+    }
+
+    @Test
+    void shouldThrowExceptionWhenDeletingNonExistingGoalSystem() {
+        assertThatThrownBy(() -> goalSystemService.deleteGoalSystem(1L, 999L))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("GoalSystem not found");
     }

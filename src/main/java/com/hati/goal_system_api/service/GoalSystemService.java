@@ -8,8 +8,10 @@ import com.hati.goal_system_api.model.Goal;
 import com.hati.goal_system_api.model.GoalSystem;
 import com.hati.goal_system_api.repository.GoalRepository;
 import com.hati.goal_system_api.repository.GoalSystemRepository;
+import com.hati.goal_system_api.repository.SystemTaskRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -19,6 +21,7 @@ public class GoalSystemService {
 
     private final GoalSystemRepository goalSystemRepository;
     private final GoalRepository goalRepository;
+    private final SystemTaskRepository systemTaskRepository;
 
     public GoalSystemResponse createGoalSystem(
             Long userId,
@@ -78,5 +81,15 @@ public class GoalSystemService {
                 updatedGoalSystem.getFrequency(),
                 updatedGoalSystem.getGoal().getId()
         );
+    }
+
+    @Transactional
+    public void deleteGoalSystem(Long userId, Long goalSystemId) {
+        GoalSystem goalSystem = goalSystemRepository
+                .findByIdAndGoalUserId(goalSystemId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("GoalSystem not found"));
+
+        systemTaskRepository.deleteAllByGoalSystemId(goalSystemId);
+        goalSystemRepository.delete(goalSystem);
     }
 }

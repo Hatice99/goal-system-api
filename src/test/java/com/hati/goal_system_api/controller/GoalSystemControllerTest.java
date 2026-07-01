@@ -19,6 +19,7 @@ import java.util.List;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -195,5 +196,14 @@ class GoalSystemControllerTest {
                 .andExpect(jsonPath("$.title", is("Weekly exercise")))
                 .andExpect(jsonPath("$.frequency", is("WEEKLY")))
                 .andExpect(jsonPath("$.goalId", is(10)));
+    }
+
+    @Test
+    void shouldDeleteGoalSystemForUser() throws Exception {
+        mockMvc.perform(delete("/systems/1")
+                        .header("X-User-Id", 1L))
+                .andExpect(status().isNoContent());
+
+        Mockito.verify(goalSystemService).deleteGoalSystem(1L, 1L);
     }
 }
