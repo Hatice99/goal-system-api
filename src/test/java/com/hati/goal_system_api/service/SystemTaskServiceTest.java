@@ -132,4 +132,85 @@ class SystemTaskServiceTest {
 
         assertThat(systemTaskRepository.findAll()).isEmpty();
     }
+
+    @Test
+    void shouldGetTaskByIdForUser() {
+        User user = new User();
+        user.setUsername("hati");
+        user.setEmail("hati@example.com");
+        user.setPassword("hashed-password");
+        User savedUser = userRepository.save(user);
+
+        Goal goal = new Goal();
+        goal.setTitle("Improve health");
+        goal.setDescription("Build healthy routines");
+        goal.setUser(savedUser);
+        Goal savedGoal = goalRepository.save(goal);
+
+        GoalSystem goalSystem = new GoalSystem();
+        goalSystem.setTitle("Morning exercise");
+        goalSystem.setFrequency(Frequency.DAILY);
+        goalSystem.setGoal(savedGoal);
+        GoalSystem savedGoalSystem = goalSystemRepository.save(goalSystem);
+
+        SystemTask task = new SystemTask();
+        task.setTitle("Run for 20 minutes");
+        task.setGoalSystem(savedGoalSystem);
+        SystemTask savedTask = systemTaskRepository.save(task);
+
+        SystemTaskResponse response = systemTaskService.getSystemTaskById(
+                savedUser.getId(),
+                savedTask.getId()
+        );
+
+        assertThat(response.id()).isEqualTo(savedTask.getId());
+        assertThat(response.title()).isEqualTo("Run for 20 minutes");
+        assertThat(response.completed()).isFalse();
+    }
+
+    @Test
+    void shouldNotGetTaskBelongingToAnotherUser() {
+        User firstUser = new User();
+        firstUser.setUsername("hati");
+        firstUser.setEmail("hati@example.com");
+        firstUser.setPassword("hashed-password");
+        User savedFirstUser = userRepository.save(firstUser);
+
+        User secondUser = new User();
+        secondUser.setUsername("alex");
+        secondUser.setEmail("alex@example.com");
+        secondUser.setPassword("hashed-password");
+        User savedSecondUser = userRepository.save(secondUser);
+
+        Goal secondUsersGoal = new Goal();
+        secondUsersGoal.setTitle("Improve health");
+        secondUsersGoal.setDescription("Build healthy routines");
+        secondUsersGoal.setUser(savedSecondUser);
+        Goal savedGoal = goalRepository.save(secondUsersGoal);
+
+        GoalSystem secondUsersGoalSystem = new GoalSystem();
+        secondUsersGoalSystem.setTitle("Morning exercise");
+        secondUsersGoalSystem.setFrequency(Frequency.DAILY);
+        secondUsersGoalSystem.setGoal(savedGoal);
+        GoalSystem savedGoalSystem = goalSystemRepository.save(secondUsersGoalSystem);
+
+        SystemTask task = new SystemTask();
+        task.setTitle("Run for 20 minutes");
+        task.setGoalSystem(savedGoalSystem);
+        SystemTask savedTask = systemTaskRepository.save(task);
+
+        assertThatThrownBy(() -> systemTaskService.getSystemTaskById(
+                savedFirstUser.getId(),
+                savedTask.getId()
+        ))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("SystemTask not found");
+    }
+
+    @Test
+    void shouldThrowExceptionWhenTaskDoesNotExist() {
+        assertThatThrownBy(() -> systemTaskService.getSystemTaskById(1L, 999L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("SystemTask not found");
+    }
 }

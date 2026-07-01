@@ -38,4 +38,16 @@ public class SystemTaskService {
                 savedTask.isCompleted()
         );
     }
+
+    public SystemTaskResponse getSystemTaskById(Long userId, Long taskId) {
+        SystemTask task = systemTaskRepository
+                .findByIdAndGoalSystemGoalUserId(taskId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("SystemTask not found"));
+
+        return new SystemTaskResponse(
+                task.getId(),
+                task.getTitle(),
+                task.isCompleted()
+        );
+    }
 }

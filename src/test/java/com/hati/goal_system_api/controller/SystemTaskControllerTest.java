@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -67,5 +68,24 @@ class SystemTaskControllerTest {
                 .andExpect(status().isBadRequest());
 
         Mockito.verifyNoInteractions(systemTaskService);
+    }
+
+    @Test
+    void shouldGetTaskByIdForUser() throws Exception {
+        SystemTaskResponse response = new SystemTaskResponse(
+                1L,
+                "Run for 20 minutes",
+                false
+        );
+
+        Mockito.when(systemTaskService.getSystemTaskById(1L, 1L))
+                .thenReturn(response);
+
+        mockMvc.perform(get("/tasks/1")
+                        .header("X-User-Id", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.title", is("Run for 20 minutes")))
+                .andExpect(jsonPath("$.completed", is(false)));
     }
 }
