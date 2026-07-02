@@ -322,6 +322,7 @@ As a user, I want to complete a task so that I can track progress inside a GoalS
 
 Acceptance criteria:
 
+- Only the owner of the related GoalSystem can complete the task.
 - A SystemTask can be changed from completed=false to completed=true.
 - The response contains id and completed.
 

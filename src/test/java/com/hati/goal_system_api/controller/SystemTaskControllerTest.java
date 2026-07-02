@@ -1,6 +1,7 @@
 package com.hati.goal_system_api.controller;
 
 import com.hati.goal_system_api.dto.systemtask.CreateSystemTaskRequest;
+import com.hati.goal_system_api.dto.systemtask.CompleteSystemTaskResponse;
 import com.hati.goal_system_api.dto.systemtask.SystemTaskResponse;
 import com.hati.goal_system_api.dto.systemtask.UpdateSystemTaskRequest;
 import com.hati.goal_system_api.service.SystemTaskService;
@@ -129,5 +130,21 @@ class SystemTaskControllerTest {
                 .andExpect(status().isBadRequest());
 
         Mockito.verifyNoInteractions(systemTaskService);
+    }
+
+    @Test
+    void shouldCompleteTaskForUser() throws Exception {
+        CompleteSystemTaskResponse response =
+                new CompleteSystemTaskResponse(1L, true);
+
+        Mockito.when(systemTaskService.completeSystemTask(1L, 1L))
+                .thenReturn(response);
+
+        mockMvc.perform(patch("/tasks/1/complete")
+                        .header("X-User-Id", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.completed", is(true)))
+                .andExpect(jsonPath("$.title").doesNotExist());
     }
 }

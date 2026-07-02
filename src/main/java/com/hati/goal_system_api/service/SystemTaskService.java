@@ -1,6 +1,7 @@
 package com.hati.goal_system_api.service;
 
 import com.hati.goal_system_api.dto.systemtask.CreateSystemTaskRequest;
+import com.hati.goal_system_api.dto.systemtask.CompleteSystemTaskResponse;
 import com.hati.goal_system_api.dto.systemtask.SystemTaskResponse;
 import com.hati.goal_system_api.dto.systemtask.UpdateSystemTaskRequest;
 import com.hati.goal_system_api.exception.ResourceNotFoundException;
@@ -61,6 +62,23 @@ public class SystemTaskService {
         SystemTask updatedTask = systemTaskRepository.save(task);
 
         return toResponse(updatedTask);
+    }
+
+    public CompleteSystemTaskResponse completeSystemTask(
+            Long userId,
+            Long taskId
+    ) {
+        SystemTask task = systemTaskRepository
+                .findByIdAndGoalSystemGoalUserId(taskId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("SystemTask not found"));
+
+        task.complete();
+        SystemTask completedTask = systemTaskRepository.save(task);
+
+        return new CompleteSystemTaskResponse(
+                completedTask.getId(),
+                completedTask.isCompleted()
+        );
     }
 
     private SystemTaskResponse toResponse(SystemTask task) {

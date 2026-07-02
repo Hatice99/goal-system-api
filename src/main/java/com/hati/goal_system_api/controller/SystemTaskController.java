@@ -1,6 +1,7 @@
 package com.hati.goal_system_api.controller;
 
 import com.hati.goal_system_api.dto.systemtask.CreateSystemTaskRequest;
+import com.hati.goal_system_api.dto.systemtask.CompleteSystemTaskResponse;
 import com.hati.goal_system_api.dto.systemtask.SystemTaskResponse;
 import com.hati.goal_system_api.dto.systemtask.UpdateSystemTaskRequest;
 import com.hati.goal_system_api.service.SystemTaskService;
@@ -50,6 +51,16 @@ public class SystemTaskController {
     ) {
         return ResponseEntity.ok(
                 systemTaskService.updateSystemTask(userId, id, request)
+        );
+    }
+
+    @PatchMapping("/tasks/{id}/complete")
+    public ResponseEntity<CompleteSystemTaskResponse> completeSystemTask(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(
+                systemTaskService.completeSystemTask(userId, id)
         );
     }
 }

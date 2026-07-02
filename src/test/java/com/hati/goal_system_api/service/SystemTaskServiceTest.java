@@ -1,6 +1,7 @@
 package com.hati.goal_system_api.service;
 
 import com.hati.goal_system_api.dto.systemtask.CreateSystemTaskRequest;
+import com.hati.goal_system_api.dto.systemtask.CompleteSystemTaskResponse;
 import com.hati.goal_system_api.dto.systemtask.SystemTaskResponse;
 import com.hati.goal_system_api.dto.systemtask.UpdateSystemTaskRequest;
 import com.hati.goal_system_api.exception.ResourceNotFoundException;
@@ -316,6 +317,95 @@ class SystemTaskServiceTest {
                 999L,
                 request
         ))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("SystemTask not found");
+    }
+
+    @Test
+    void shouldCompleteTaskForUser() {
+        User user = new User();
+        user.setUsername("hati");
+        user.setEmail("hati@example.com");
+        user.setPassword("hashed-password");
+        User savedUser = userRepository.save(user);
+
+        Goal goal = new Goal();
+        goal.setTitle("Improve health");
+        goal.setDescription("Build healthy routines");
+        goal.setUser(savedUser);
+        Goal savedGoal = goalRepository.save(goal);
+
+        GoalSystem goalSystem = new GoalSystem();
+        goalSystem.setTitle("Morning exercise");
+        goalSystem.setFrequency(Frequency.DAILY);
+        goalSystem.setGoal(savedGoal);
+        GoalSystem savedGoalSystem = goalSystemRepository.save(goalSystem);
+
+        SystemTask task = new SystemTask();
+        task.setTitle("Run for 20 minutes");
+        task.setGoalSystem(savedGoalSystem);
+        SystemTask savedTask = systemTaskRepository.save(task);
+
+        CompleteSystemTaskResponse response = systemTaskService.completeSystemTask(
+                savedUser.getId(),
+                savedTask.getId()
+        );
+
+        SystemTask completedTask = systemTaskRepository.findById(savedTask.getId())
+                .orElseThrow();
+
+        assertThat(response.id()).isEqualTo(savedTask.getId());
+        assertThat(response.completed()).isTrue();
+        assertThat(completedTask.isCompleted()).isTrue();
+    }
+
+    @Test
+    void shouldNotCompleteTaskBelongingToAnotherUser() {
+        User firstUser = new User();
+        firstUser.setUsername("hati");
+        firstUser.setEmail("hati@example.com");
+        firstUser.setPassword("hashed-password");
+        User savedFirstUser = userRepository.save(firstUser);
+
+        User secondUser = new User();
+        secondUser.setUsername("alex");
+        secondUser.setEmail("alex@example.com");
+        secondUser.setPassword("hashed-password");
+        User savedSecondUser = userRepository.save(secondUser);
+
+        Goal goal = new Goal();
+        goal.setTitle("Improve health");
+        goal.setDescription("Build healthy routines");
+        goal.setUser(savedSecondUser);
+        Goal savedGoal = goalRepository.save(goal);
+
+        GoalSystem goalSystem = new GoalSystem();
+        goalSystem.setTitle("Morning exercise");
+        goalSystem.setFrequency(Frequency.DAILY);
+        goalSystem.setGoal(savedGoal);
+        GoalSystem savedGoalSystem = goalSystemRepository.save(goalSystem);
+
+        SystemTask task = new SystemTask();
+        task.setTitle("Run for 20 minutes");
+        task.setGoalSystem(savedGoalSystem);
+        SystemTask savedTask = systemTaskRepository.save(task);
+
+        assertThatThrownBy(() -> systemTaskService.completeSystemTask(
+                savedFirstUser.getId(),
+                savedTask.getId()
+        ))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("SystemTask not found");
+
+        assertThat(systemTaskRepository.findById(savedTask.getId()))
+                .get()
+                .extracting(SystemTask::isCompleted)
+                .isEqualTo(false);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenCompletingUnknownTask() {
+        assertThatThrownBy(() -> systemTaskService.completeSystemTask(1L, 999L))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("SystemTask not found");
     }
