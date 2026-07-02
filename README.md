@@ -101,10 +101,15 @@ As a user, I want to register so that I can manage my own goals and systems.
 Acceptance criteria:
 
 - A user can register with username, email, and password.
+- Username, email, and password are required.
+- Email must have a valid format.
+- Password must contain at least 8 characters.
 - Email must be unique.
 - Username must be unique.
 - The password is not stored as plain text.
 - Sensitive data is not returned in the response.
+- A successful registration returns HTTP 201.
+- A duplicate email or username returns HTTP 409.
 
 Endpoint:
 
@@ -354,3 +359,11 @@ DELETE /tasks/{id}
 - H2 test database configured
 - UserRepository implemented and tested
 - GoalRepository implemented and tested
+- Goal CRUD implemented
+- GoalSystem CRUD implemented
+- SystemTask CRUD and completion implemented
+- Ownership checks implemented for user-specific resources
+- Request validation and centralized 404 error handling implemented
+- Tasks 1 and 3-16 completed with 84 automated tests
+- Registration with BCrypt password hashing implemented
+- Login, JWT authentication, and PostgreSQL configuration are still pending
