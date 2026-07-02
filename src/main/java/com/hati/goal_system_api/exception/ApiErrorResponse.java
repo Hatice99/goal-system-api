@@ -1,5 +1,5 @@
 package com.hati.goal_system_api.exception;
 
-//DTO für Fehlerantworten
+// Defines the JSON structure returned for API errors.
 public record ApiErrorResponse(String message) {
 }
