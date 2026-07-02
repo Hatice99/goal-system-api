@@ -2,6 +2,7 @@ package com.hati.goal_system_api.controller;
 
 import com.hati.goal_system_api.dto.systemtask.CreateSystemTaskRequest;
 import com.hati.goal_system_api.dto.systemtask.SystemTaskResponse;
+import com.hati.goal_system_api.dto.systemtask.UpdateSystemTaskRequest;
 import com.hati.goal_system_api.service.SystemTaskService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -16,6 +17,7 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -87,5 +89,45 @@ class SystemTaskControllerTest {
                 .andExpect(jsonPath("$.id", is(1)))
                 .andExpect(jsonPath("$.title", is("Run for 20 minutes")))
                 .andExpect(jsonPath("$.completed", is(false)));
+    }
+
+    @Test
+    void shouldUpdateTaskTitleForUser() throws Exception {
+        SystemTaskResponse response = new SystemTaskResponse(
+                1L,
+                "Run for 20 minutes",
+                false
+        );
+
+        Mockito.when(systemTaskService.updateSystemTask(
+                        eq(1L),
+                        eq(1L),
+                        any(UpdateSystemTaskRequest.class)
+                ))
+                .thenReturn(response);
+
+        mockMvc.perform(patch("/tasks/1")
+                        .header("X-User-Id", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Run for 20 minutes"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.title", is("Run for 20 minutes")))
+                .andExpect(jsonPath("$.completed", is(false)));
+    }
+
+    @Test
+    void shouldRejectTaskUpdateWithoutTitle() throws Exception {
+        mockMvc.perform(patch("/tasks/1")
+                        .header("X-User-Id", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        Mockito.verifyNoInteractions(systemTaskService);
     }
 }

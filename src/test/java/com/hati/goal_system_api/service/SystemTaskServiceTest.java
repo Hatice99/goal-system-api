@@ -2,6 +2,7 @@ package com.hati.goal_system_api.service;
 
 import com.hati.goal_system_api.dto.systemtask.CreateSystemTaskRequest;
 import com.hati.goal_system_api.dto.systemtask.SystemTaskResponse;
+import com.hati.goal_system_api.dto.systemtask.UpdateSystemTaskRequest;
 import com.hati.goal_system_api.exception.ResourceNotFoundException;
 import com.hati.goal_system_api.model.Frequency;
 import com.hati.goal_system_api.model.Goal;
@@ -210,6 +211,111 @@ class SystemTaskServiceTest {
     @Test
     void shouldThrowExceptionWhenTaskDoesNotExist() {
         assertThatThrownBy(() -> systemTaskService.getSystemTaskById(1L, 999L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("SystemTask not found");
+    }
+
+    @Test
+    void shouldUpdateTaskTitleForUser() {
+        User user = new User();
+        user.setUsername("hati");
+        user.setEmail("hati@example.com");
+        user.setPassword("hashed-password");
+        User savedUser = userRepository.save(user);
+
+        Goal goal = new Goal();
+        goal.setTitle("Improve health");
+        goal.setDescription("Build healthy routines");
+        goal.setUser(savedUser);
+        Goal savedGoal = goalRepository.save(goal);
+
+        GoalSystem goalSystem = new GoalSystem();
+        goalSystem.setTitle("Morning exercise");
+        goalSystem.setFrequency(Frequency.DAILY);
+        goalSystem.setGoal(savedGoal);
+        GoalSystem savedGoalSystem = goalSystemRepository.save(goalSystem);
+
+        SystemTask task = new SystemTask();
+        task.setTitle("Run");
+        task.setGoalSystem(savedGoalSystem);
+        SystemTask savedTask = systemTaskRepository.save(task);
+
+        UpdateSystemTaskRequest request =
+                new UpdateSystemTaskRequest("Run for 20 minutes");
+
+        SystemTaskResponse response = systemTaskService.updateSystemTask(
+                savedUser.getId(),
+                savedTask.getId(),
+                request
+        );
+
+        SystemTask updatedTask = systemTaskRepository.findById(savedTask.getId())
+                .orElseThrow();
+
+        assertThat(response.title()).isEqualTo("Run for 20 minutes");
+        assertThat(response.completed()).isFalse();
+        assertThat(updatedTask.getTitle()).isEqualTo("Run for 20 minutes");
+        assertThat(updatedTask.isCompleted()).isFalse();
+    }
+
+    @Test
+    void shouldNotUpdateTaskBelongingToAnotherUser() {
+        User firstUser = new User();
+        firstUser.setUsername("hati");
+        firstUser.setEmail("hati@example.com");
+        firstUser.setPassword("hashed-password");
+        User savedFirstUser = userRepository.save(firstUser);
+
+        User secondUser = new User();
+        secondUser.setUsername("alex");
+        secondUser.setEmail("alex@example.com");
+        secondUser.setPassword("hashed-password");
+        User savedSecondUser = userRepository.save(secondUser);
+
+        Goal goal = new Goal();
+        goal.setTitle("Improve health");
+        goal.setDescription("Build healthy routines");
+        goal.setUser(savedSecondUser);
+        Goal savedGoal = goalRepository.save(goal);
+
+        GoalSystem goalSystem = new GoalSystem();
+        goalSystem.setTitle("Morning exercise");
+        goalSystem.setFrequency(Frequency.DAILY);
+        goalSystem.setGoal(savedGoal);
+        GoalSystem savedGoalSystem = goalSystemRepository.save(goalSystem);
+
+        SystemTask task = new SystemTask();
+        task.setTitle("Run");
+        task.setGoalSystem(savedGoalSystem);
+        SystemTask savedTask = systemTaskRepository.save(task);
+
+        UpdateSystemTaskRequest request =
+                new UpdateSystemTaskRequest("Run for 20 minutes");
+
+        assertThatThrownBy(() -> systemTaskService.updateSystemTask(
+                savedFirstUser.getId(),
+                savedTask.getId(),
+                request
+        ))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("SystemTask not found");
+
+        assertThat(systemTaskRepository.findById(savedTask.getId()))
+                .get()
+                .extracting(SystemTask::getTitle)
+                .isEqualTo("Run");
+    }
+
+    @Test
+    void shouldThrowExceptionWhenUpdatingUnknownTask() {
+        UpdateSystemTaskRequest request =
+                new UpdateSystemTaskRequest("Run for 20 minutes");
+
+        assertThatThrownBy(() -> systemTaskService.updateSystemTask(
+                1L,
+                999L,
+                request
+        ))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("SystemTask not found");
     }

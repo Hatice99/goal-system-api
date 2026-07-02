@@ -2,6 +2,7 @@ package com.hati.goal_system_api.controller;
 
 import com.hati.goal_system_api.dto.systemtask.CreateSystemTaskRequest;
 import com.hati.goal_system_api.dto.systemtask.SystemTaskResponse;
+import com.hati.goal_system_api.dto.systemtask.UpdateSystemTaskRequest;
 import com.hati.goal_system_api.service.SystemTaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -38,5 +40,16 @@ public class SystemTaskController {
             @PathVariable Long id
     ) {
         return ResponseEntity.ok(systemTaskService.getSystemTaskById(userId, id));
+    }
+
+    @PatchMapping("/tasks/{id}")
+    public ResponseEntity<SystemTaskResponse> updateSystemTask(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateSystemTaskRequest request
+    ) {
+        return ResponseEntity.ok(
+                systemTaskService.updateSystemTask(userId, id, request)
+        );
     }
 }

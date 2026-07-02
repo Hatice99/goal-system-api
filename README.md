@@ -307,7 +307,8 @@ As a user, I want to update a task so that I can change its title.
 Acceptance criteria:
 
 - Only the owner of the related GoalSystem can update the task.
-- The title can be changed.
+- The title can be changed to a non-empty value.
+- Updating the title does not change the completed status.
 
 Endpoint:
 
