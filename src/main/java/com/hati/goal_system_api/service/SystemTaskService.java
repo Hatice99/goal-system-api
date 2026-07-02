@@ -11,6 +11,7 @@ import com.hati.goal_system_api.repository.GoalSystemRepository;
 import com.hati.goal_system_api.repository.SystemTaskRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -79,6 +80,15 @@ public class SystemTaskService {
                 completedTask.getId(),
                 completedTask.isCompleted()
         );
+    }
+
+    @Transactional
+    public void deleteSystemTask(Long userId, Long taskId) {
+        SystemTask task = systemTaskRepository
+                .findByIdAndGoalSystemGoalUserId(taskId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("SystemTask not found"));
+
+        systemTaskRepository.delete(task);
     }
 
     private SystemTaskResponse toResponse(SystemTask task) {

@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -146,5 +147,14 @@ class SystemTaskControllerTest {
                 .andExpect(jsonPath("$.id", is(1)))
                 .andExpect(jsonPath("$.completed", is(true)))
                 .andExpect(jsonPath("$.title").doesNotExist());
+    }
+
+    @Test
+    void shouldDeleteTaskForUser() throws Exception {
+        mockMvc.perform(delete("/tasks/1")
+                        .header("X-User-Id", 1L))
+                .andExpect(status().isNoContent());
+
+        Mockito.verify(systemTaskService).deleteSystemTask(1L, 1L);
     }
 }

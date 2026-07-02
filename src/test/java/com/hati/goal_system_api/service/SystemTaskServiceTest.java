@@ -409,4 +409,85 @@ class SystemTaskServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("SystemTask not found");
     }
+
+    @Test
+    void shouldDeleteTaskForUser() {
+        User user = new User();
+        user.setUsername("hati");
+        user.setEmail("hati@example.com");
+        user.setPassword("hashed-password");
+        User savedUser = userRepository.save(user);
+
+        Goal goal = new Goal();
+        goal.setTitle("Improve health");
+        goal.setDescription("Build healthy routines");
+        goal.setUser(savedUser);
+        Goal savedGoal = goalRepository.save(goal);
+
+        GoalSystem goalSystem = new GoalSystem();
+        goalSystem.setTitle("Morning exercise");
+        goalSystem.setFrequency(Frequency.DAILY);
+        goalSystem.setGoal(savedGoal);
+        GoalSystem savedGoalSystem = goalSystemRepository.save(goalSystem);
+
+        SystemTask task = new SystemTask();
+        task.setTitle("Run for 20 minutes");
+        task.setGoalSystem(savedGoalSystem);
+        SystemTask savedTask = systemTaskRepository.save(task);
+
+        systemTaskService.deleteSystemTask(
+                savedUser.getId(),
+                savedTask.getId()
+        );
+
+        assertThat(systemTaskRepository.findById(savedTask.getId())).isEmpty();
+    }
+
+    @Test
+    void shouldNotDeleteTaskBelongingToAnotherUser() {
+        User firstUser = new User();
+        firstUser.setUsername("hati");
+        firstUser.setEmail("hati@example.com");
+        firstUser.setPassword("hashed-password");
+        User savedFirstUser = userRepository.save(firstUser);
+
+        User secondUser = new User();
+        secondUser.setUsername("alex");
+        secondUser.setEmail("alex@example.com");
+        secondUser.setPassword("hashed-password");
+        User savedSecondUser = userRepository.save(secondUser);
+
+        Goal goal = new Goal();
+        goal.setTitle("Improve health");
+        goal.setDescription("Build healthy routines");
+        goal.setUser(savedSecondUser);
+        Goal savedGoal = goalRepository.save(goal);
+
+        GoalSystem goalSystem = new GoalSystem();
+        goalSystem.setTitle("Morning exercise");
+        goalSystem.setFrequency(Frequency.DAILY);
+        goalSystem.setGoal(savedGoal);
+        GoalSystem savedGoalSystem = goalSystemRepository.save(goalSystem);
+
+        SystemTask task = new SystemTask();
+        task.setTitle("Run for 20 minutes");
+        task.setGoalSystem(savedGoalSystem);
+        SystemTask savedTask = systemTaskRepository.save(task);
+
+        assertThatThrownBy(() -> systemTaskService.deleteSystemTask(
+                savedFirstUser.getId(),
+                savedTask.getId()
+        ))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("SystemTask not found");
+
+        assertThat(systemTaskRepository.findById(savedTask.getId())).isPresent();
+    }
+
+    @Test
+    void shouldThrowExceptionWhenDeletingUnknownTask() {
+        assertThatThrownBy(() -> systemTaskService.deleteSystemTask(1L, 999L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("SystemTask not found");
+    }
 }
